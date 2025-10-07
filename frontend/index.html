@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Reasoning Engine</title>
+    <title>AI Assistant</title>
     <style>
         * {
             margin: 0;
@@ -18,6 +18,7 @@
             display: flex;
             flex-direction: column;
             color: white;
+            overflow-x: hidden;
         }
 
         .navbar {
@@ -28,7 +29,6 @@
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -40,12 +40,6 @@
             gap: 0.75rem;
             font-size: 1.5rem;
             font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
         }
 
         .logo-icon {
@@ -57,11 +51,6 @@
             align-items: center;
             justify-content: center;
             font-size: 1.3rem;
-            transition: all 0.3s ease;
-        }
-
-        .logo:hover .logo-icon {
-            box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
         }
 
         .status-indicator {
@@ -97,21 +86,25 @@
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            transition: all 0.3s ease;
         }
 
-        .main-content.chat-active .hero-section {
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            margin-bottom: 0;
+        .main-content.full-screen {
+            max-width: none;
+            padding: 1rem;
         }
 
         .hero-section {
             text-align: center;
-            max-height: 500px;
-            opacity: 1;
-            transition: all 0.5s ease;
             margin-bottom: 3rem;
+            transition: all 0.3s ease;
+        }
+
+        .main-content.full-screen .hero-section {
+            opacity: 0;
+            height: 0;
+            margin-bottom: 0;
+            overflow: hidden;
         }
 
         .badge {
@@ -126,7 +119,7 @@
         }
 
         .title {
-            font-size: 4rem;
+            font-size: 3rem;
             font-weight: bold;
             margin-bottom: 1rem;
             background: linear-gradient(to right, #ffffff, #e9d5ff, #fbbf24);
@@ -136,9 +129,8 @@
         }
 
         .subtitle {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             opacity: 0.8;
-            margin-bottom: 2rem;
             line-height: 1.6;
         }
 
@@ -154,17 +146,26 @@
             transition: all 0.3s ease;
         }
 
-        .chat-container.expanded {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        .main-content.full-screen .chat-container {
+            max-width: none;
+            height: calc(100vh - 2rem);
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
         }
 
         .messages-container {
-            max-height: 500px;
+            flex: 1;
             overflow-y: auto;
             margin-bottom: 1.5rem;
             display: none;
             padding-right: 0.5rem;
+        }
+
+        .main-content.full-screen .messages-container {
+            display: block;
+            flex: 1;
+            max-height: none;
         }
 
         .messages-container.visible {
@@ -219,126 +220,35 @@
         .message-ai {
             background: rgba(30, 30, 45, 0.6);
             border: 1px solid rgba(168, 85, 247, 0.2);
-            border-left: 3px solid #a855f7;
             padding: 1.5rem;
             border-radius: 18px;
-            max-width: 95%;
-        }
-
-        .reasoning-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            font-weight: 600;
-            color: #c084fc;
-            font-size: 1rem;
-        }
-
-        .brain-icon {
-            font-size: 1.5rem;
-            animation: think 2s ease-in-out infinite;
-        }
-
-        @keyframes think {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .decomposition-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #a78bfa;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-
-        .step {
-            background: rgba(168, 85, 247, 0.1);
-            border-left: 3px solid #a855f7;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .step:hover {
-            background: rgba(168, 85, 247, 0.15);
-            transform: translateX(5px);
-        }
-
-        .step-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .step-title {
-            font-weight: 500;
-            color: #e9d5ff;
-        }
-
-        .tool-badge {
-            background: rgba(251, 191, 36, 0.2);
-            border: 1px solid rgba(251, 191, 36, 0.4);
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            color: #fbbf24;
-            font-weight: 600;
-        }
-
-        .step-solution {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
             line-height: 1.6;
         }
 
-        .final-answer {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(168, 85, 247, 0.15));
-            border: 2px solid rgba(34, 197, 94, 0.4);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-top: 1.5rem;
+        .message-ai p {
+            margin-bottom: 1rem;
         }
 
-        .final-answer-label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #86efac;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
+        .message-ai p:last-child {
+            margin-bottom: 0;
         }
 
-        .final-answer-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: white;
-            line-height: 1.6;
+        .message-ai ul, .message-ai ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
         }
 
-        .thinking-process {
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: rgba(168, 85, 247, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(168, 85, 247, 0.3);
+        .message-ai li {
+            margin: 0.25rem 0;
         }
 
-        .thinking-header {
+        .thinking {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-weight: 600;
             color: #c084fc;
-            font-size: 0.9rem;
+            font-style: italic;
+            padding: 1rem;
         }
 
         .thinking-spinner {
@@ -354,81 +264,37 @@
             to { transform: rotate(360deg); }
         }
 
-        .input-wrapper {
-            position: relative;
-            margin-bottom: 1.5rem;
+        .input-container {
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         .chat-input {
             width: 100%;
-            padding: 1.5rem;
-            background: rgba(40, 40, 60, 0.8);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 16px;
+            background: transparent;
+            border: none;
             color: white;
             font-size: 1rem;
             resize: none;
             outline: none;
-            transition: all 0.3s;
             font-family: inherit;
             line-height: 1.5;
             min-height: 60px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .chat-input:focus {
-            border-color: rgba(168, 85, 247, 0.5);
-            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-            transform: translateY(-2px);
+            max-height: 120px;
+            overflow-y: hidden; /* Remove scrollbar */
+            padding: 0.5rem;
         }
 
         .chat-input::placeholder {
             color: rgba(255, 255, 255, 0.4);
-        }
-
-        .input-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .show-steps-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 48px;
-            height: 24px;
-            background: rgba(100, 100, 100, 0.5);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .toggle-switch.active {
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-        }
-
-        .toggle-knob {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
-
-        .toggle-switch.active .toggle-knob {
-            transform: translateX(24px);
         }
 
         .send-button {
@@ -441,9 +307,8 @@
             font-size: 1rem;
             font-weight: 600;
             transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            width: 100%;
+            margin-top: 1rem;
         }
 
         .send-button:hover:not(:disabled) {
@@ -456,10 +321,24 @@
             cursor: not-allowed;
         }
 
+        .minimize-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            align-self: flex-start;
+        }
+
+        .minimize-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .error-message {
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.4);
-            border-left: 3px solid #ef4444;
             padding: 1rem 1.5rem;
             border-radius: 12px;
             color: #fca5a5;
@@ -472,11 +351,7 @@
             }
 
             .title {
-                font-size: 2.5rem;
-            }
-
-            .subtitle {
-                font-size: 1.2rem;
+                font-size: 2rem;
             }
 
             .chat-container {
@@ -484,31 +359,17 @@
             }
 
             .main-content {
-                padding: 1.5rem;
+                padding: 1rem;
             }
 
             .message-user {
                 max-width: 90%;
             }
-
-            .input-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .send-button {
-                width: 100%;
-                justify-content: center;
-            }
         }
 
         @media (max-width: 480px) {
             .title {
-                font-size: 2rem;
-            }
-
-            .subtitle {
-                font-size: 1rem;
+                font-size: 1.8rem;
             }
 
             .logo {
@@ -525,8 +386,8 @@
 <body>
     <nav class="navbar">
         <div class="logo">
-            <div class="logo-icon">🧠</div>
-            <span>Reasoning Engine</span>
+            <div class="logo-icon">🤖</div>
+            <span>AI Assistant</span>
         </div>
         
         <div class="status-indicator">
@@ -537,52 +398,53 @@
 
     <main class="main-content" id="mainContent">
         <div class="hero-section">
-            <div class="badge">⚡ Powered by Advanced AI Reasoning</div>
-            <h1 class="title">AI Reasoning Engine</h1>
+            <div class="badge">⚡ Powered by Advanced AI</div>
+            <h1 class="title">AI Assistant</h1>
             <p class="subtitle">
-                Ask any question and watch AI break it down step-by-step<br>
-                with intelligent tool selection and logical reasoning
+                Ask me anything and get clear, direct answers
             </p>
         </div>
 
         <div class="chat-container" id="chatContainer">
             <div class="messages-container" id="messagesContainer"></div>
             
-            <div class="input-wrapper">
+            <div class="input-container">
                 <textarea 
                     class="chat-input" 
                     id="chatInput"
-                    placeholder="Ask me anything... e.g., 'What is 25 * 4 + 10?' or 'Solve for x: 2x + 5 = 15' or 'Explain quantum computing'"
+                    placeholder="Ask me anything... e.g., 'Who is Amir Khan?' or 'What is 25 * 4 + 10?'"
                     rows="1"
                 ></textarea>
-            </div>
-            
-            <div class="input-controls">
-                <div class="show-steps-toggle">
-                    <span>Show thinking process</span>
-                    <div class="toggle-switch active" id="stepsToggle" onclick="toggleSteps()">
-                        <div class="toggle-knob"></div>
-                    </div>
-                </div>
                 <button class="send-button" id="sendButton" onclick="sendMessage()">
-                    <span>Solve</span>
-                    <span>→</span>
+                    Ask Question
                 </button>
             </div>
         </div>
     </main>
 
     <script>
-        let showSteps = true;
         let isProcessing = false;
+        let isFullScreen = false;
+        
+        // Auto-detect API URL
         const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:5000' 
             : '';
 
-        function toggleSteps() {
-            showSteps = !showSteps;
-            const toggle = document.getElementById('stepsToggle');
-            toggle.classList.toggle('active');
+        function enterFullScreen() {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.classList.add('full-screen');
+            isFullScreen = true;
+            
+            // Scroll to bottom
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function exitFullScreen() {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.classList.remove('full-screen');
+            isFullScreen = false;
         }
 
         function addUserMessage(content) {
@@ -597,8 +459,6 @@
             
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            return messageDiv;
         }
 
         function addThinkingMessage() {
@@ -608,11 +468,9 @@
             messageDiv.className = 'message';
             messageDiv.innerHTML = `
                 <div class="message-ai">
-                    <div class="thinking-process">
-                        <div class="thinking-header">
-                            <div class="thinking-spinner"></div>
-                            <span>Analyzing and decomposing your question...</span>
-                        </div>
+                    <div class="thinking">
+                        <div class="thinking-spinner"></div>
+                        <span>Thinking...</span>
                     </div>
                 </div>
             `;
@@ -628,62 +486,34 @@
             
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
-            
-            let html = '<div class="message-ai">';
-            
-            // Show decomposition and steps if enabled and available
-            if (showSteps && data.subproblems && data.subproblems.length > 0) {
-                html += `
-                    <div class="reasoning-header">
-                        <span class="brain-icon">🧠</span>
-                        <span>Reasoning Process</span>
-                    </div>
-                `;
-                
-                // Show decomposition steps
-                if (data.decomposition_steps && data.decomposition_steps.length > 0) {
-                    html += `
-                        <div class="decomposition-section">
-                            <div class="section-title">Problem Decomposition</div>
-                    `;
-                    
-                    data.decomposition_steps.forEach((step, index) => {
-                        html += `<div class="step"><strong>Step ${index + 1}:</strong> ${escapeHtml(step)}</div>`;
-                    });
-                    
-                    html += '</div>';
-                }
-                
-                // Show subproblem solutions
-                html += '<div class="section-title">Step-by-Step Solution</div>';
-                
-                data.subproblems.forEach((item, index) => {
-                    const toolName = formatToolName(item.tool);
-                    html += `
-                        <div class="step">
-                            <div class="step-header">
-                                <div class="step-title">${escapeHtml(item.subproblem)}</div>
-                                <div class="tool-badge">${toolName}</div>
-                            </div>
-                            <div class="step-solution">${escapeHtml(item.solution)}</div>
-                        </div>
-                    `;
-                });
-            }
-            
-            // Final answer
-            html += `
-                <div class="final-answer">
-                    <div class="final-answer-label">✓ Final Answer</div>
-                    <div class="final-answer-text">${escapeHtml(data.final_answer)}</div>
-                </div>
+            messageDiv.innerHTML = `
+                <div class="message-ai">${formatAnswer(data.final_answer)}</div>
             `;
             
-            html += '</div>';
-            
-            messageDiv.innerHTML = html;
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatAnswer(text) {
+            // Convert line breaks to paragraphs and basic formatting
+            let formatted = escapeHtml(text);
+            
+            // Replace double line breaks with paragraph breaks
+            formatted = formatted.replace(/\n\s*\n/g, '</p><p>');
+            
+            // Replace single line breaks with line breaks
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            // Wrap in paragraphs if needed
+            if (!formatted.startsWith('<p>')) {
+                formatted = '<p>' + formatted + '</p>';
+            }
+            
+            // Convert * to bullet points
+            formatted = formatted.replace(/\*\s*(.+?)(?=\n|$)/g, '<li>$1</li>');
+            formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            return formatted;
         }
 
         function addErrorMessage(error) {
@@ -720,13 +550,16 @@
             isProcessing = true;
             const sendButton = document.getElementById('sendButton');
             sendButton.disabled = true;
-            
-            const mainContent = document.getElementById('mainContent');
-            mainContent.classList.add('chat-active');
+            sendButton.textContent = 'Thinking...';
 
             // Add user message
             addUserMessage(message);
             input.value = '';
+
+            // Enter full screen mode
+            if (!isFullScreen) {
+                enterFullScreen();
+            }
 
             // Add thinking message
             const thinkingMsg = addThinkingMessage();
@@ -746,8 +579,7 @@
                 removeMessage(thinkingMsg);
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to get response from server');
+                    throw new Error('Failed to get response from server');
                 }
 
                 const data = await response.json();
@@ -757,49 +589,28 @@
 
             } catch (error) {
                 removeMessage(thinkingMsg);
-                addErrorMessage(error.message || 'Failed to connect to the server. Please make sure the backend is running.');
+                addErrorMessage(error.message || 'Failed to connect to the server. Please try again later.');
                 console.error('Error:', error);
             } finally {
                 isProcessing = false;
                 sendButton.disabled = false;
+                sendButton.textContent = 'Ask Question';
                 input.focus();
+                
+                // Auto-resize input
+                autoResizeInput(input);
             }
         }
 
-        function formatToolName(tool) {
-            const toolNames = {
-                'calculator': '🔢 Calculator',
-                'equation_solver': '📐 Equation Solver',
-                'pattern_recognizer': '🔍 Pattern Finder',
-                'logic_evaluator': '💡 Logic Engine',
-                'llm_reasoner': '🤖 AI Reasoner',
-                'text_analyzer': '📖 Text Analyzer',
-                'definition_provider': '📚 Definition Provider',
-                'comparison_engine': '⚖️ Comparison Engine',
-                'explanation_engine': '🔍 Explanation Engine',
-                'enhanced_reasoner': '🧠 Enhanced Reasoner'
-            };
-            return toolNames[tool] || tool;
+        function autoResizeInput(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        // Auto-expand textarea
-        function autoExpand(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-            
-            // Expand chat container when typing
-            const chatContainer = document.getElementById('chatContainer');
-            if (textarea.value.trim()) {
-                chatContainer.classList.add('expanded');
-            } else {
-                chatContainer.classList.remove('expanded');
-            }
         }
 
         // Enter to send (Shift+Enter for new line)
@@ -810,14 +621,29 @@
             }
         });
 
-        // Auto-expand on input
+        // Auto-resize input
         document.getElementById('chatInput').addEventListener('input', function() {
-            autoExpand(this);
+            autoResizeInput(this);
         });
 
-        // Initial auto-expand
+        // Escape key to exit full screen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isFullScreen) {
+                exitFullScreen();
+            }
+        });
+
+        // Click outside to exit full screen (optional)
+        document.addEventListener('click', function(e) {
+            if (isFullScreen && !document.getElementById('chatContainer').contains(e.target)) {
+                exitFullScreen();
+            }
+        });
+
+        // Initial setup
         document.addEventListener('DOMContentLoaded', function() {
-            autoExpand(document.getElementById('chatInput'));
+            autoResizeInput(document.getElementById('chatInput'));
+            document.getElementById('chatInput').focus();
         });
 
         // Check backend health on load
