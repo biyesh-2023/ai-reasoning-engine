@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant</title>
+    <title>AI Reasoning Engine</title>
     <style>
         * {
             margin: 0;
@@ -28,6 +28,10 @@
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .logo {
@@ -36,6 +40,12 @@
             gap: 0.75rem;
             font-size: 1.5rem;
             font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .logo-icon {
@@ -47,6 +57,35 @@
             align-items: center;
             justify-content: center;
             font-size: 1.3rem;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover .logo-icon {
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .main-content {
@@ -55,38 +94,69 @@
             flex-direction: column;
             align-items: center;
             padding: 2rem;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             width: 100%;
         }
 
+        .main-content.chat-active .hero-section {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
         .hero-section {
             text-align: center;
+            max-height: 500px;
+            opacity: 1;
+            transition: all 0.5s ease;
             margin-bottom: 3rem;
         }
 
+        .badge {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            margin-bottom: 2rem;
+            color: #e9d5ff;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
         .title {
-            font-size: 3rem;
+            font-size: 4rem;
             font-weight: bold;
             margin-bottom: 1rem;
-            background: linear-gradient(to right, #ffffff, #e9d5ff);
+            background: linear-gradient(to right, #ffffff, #e9d5ff, #fbbf24);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .subtitle {
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             opacity: 0.8;
+            margin-bottom: 2rem;
             line-height: 1.6;
         }
 
         .chat-container {
             width: 100%;
+            max-width: 900px;
             background: rgba(20, 20, 30, 0.7);
             backdrop-filter: blur(20px);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .chat-container.expanded {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
         }
 
         .messages-container {
@@ -94,14 +164,33 @@
             overflow-y: auto;
             margin-bottom: 1.5rem;
             display: none;
+            padding-right: 0.5rem;
         }
 
         .messages-container.visible {
             display: block;
         }
 
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.3);
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.5);
+        }
+
         .message {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             animation: slideIn 0.3s ease;
         }
 
@@ -124,31 +213,132 @@
             margin-left: auto;
             max-width: 80%;
             width: fit-content;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
         }
 
         .message-ai {
             background: rgba(30, 30, 45, 0.6);
             border: 1px solid rgba(168, 85, 247, 0.2);
+            border-left: 3px solid #a855f7;
             padding: 1.5rem;
             border-radius: 18px;
+            max-width: 95%;
+        }
+
+        .reasoning-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            color: #c084fc;
+            font-size: 1rem;
+        }
+
+        .brain-icon {
+            font-size: 1.5rem;
+            animation: think 2s ease-in-out infinite;
+        }
+
+        @keyframes think {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .decomposition-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a78bfa;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .step {
+            background: rgba(168, 85, 247, 0.1);
+            border-left: 3px solid #a855f7;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            background: rgba(168, 85, 247, 0.15);
+            transform: translateX(5px);
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-title {
+            font-weight: 500;
+            color: #e9d5ff;
+        }
+
+        .tool-badge {
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .step-solution {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
             line-height: 1.6;
         }
 
-        .message-ai ul, .message-ai ol {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
+        .final-answer {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(168, 85, 247, 0.15));
+            border: 2px solid rgba(34, 197, 94, 0.4);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
         }
 
-        .message-ai li {
-            margin: 0.25rem 0;
+        .final-answer-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #86efac;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
         }
 
-        .thinking {
+        .final-answer-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .thinking-process {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .thinking-header {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-weight: 600;
             color: #c084fc;
-            font-style: italic;
+            font-size: 0.9rem;
         }
 
         .thinking-spinner {
@@ -165,24 +355,80 @@
         }
 
         .input-wrapper {
-            margin-bottom: 1rem;
+            position: relative;
+            margin-bottom: 1.5rem;
         }
 
         .chat-input {
             width: 100%;
-            padding: 1.2rem;
+            padding: 1.5rem;
             background: rgba(40, 40, 60, 0.8);
             border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 12px;
+            border-radius: 16px;
             color: white;
             font-size: 1rem;
             resize: none;
             outline: none;
+            transition: all 0.3s;
             font-family: inherit;
+            line-height: 1.5;
+            min-height: 60px;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .chat-input:focus {
             border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .input-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .show-steps-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: rgba(100, 100, 100, 0.5);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+        }
+
+        .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-knob {
+            transform: translateX(24px);
         }
 
         .send-button {
@@ -194,16 +440,30 @@
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
-            width: 100%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .send-button:hover:not(:disabled) {
             transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
         }
 
         .send-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-left: 3px solid #ef4444;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: #fca5a5;
+            margin-top: 1rem;
         }
 
         @media (max-width: 768px) {
@@ -212,7 +472,11 @@
             }
 
             .title {
-                font-size: 2rem;
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
             }
 
             .chat-container {
@@ -220,7 +484,40 @@
             }
 
             .main-content {
-                padding: 1rem;
+                padding: 1.5rem;
+            }
+
+            .message-user {
+                max-width: 90%;
+            }
+
+            .input-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .send-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .logo-icon {
+                width: 32px;
+                height: 32px;
             }
         }
     </style>
@@ -228,44 +525,65 @@
 <body>
     <nav class="navbar">
         <div class="logo">
-            <div class="logo-icon">🤖</div>
-            <span>AI Assistant</span>
+            <div class="logo-icon">🧠</div>
+            <span>Reasoning Engine</span>
+        </div>
+        
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span>AI Online</span>
         </div>
     </nav>
 
-    <main class="main-content">
+    <main class="main-content" id="mainContent">
         <div class="hero-section">
-            <h1 class="title">AI Assistant</h1>
+            <div class="badge">⚡ Powered by Advanced AI Reasoning</div>
+            <h1 class="title">AI Reasoning Engine</h1>
             <p class="subtitle">
-                Ask me anything and get clear, direct answers
+                Ask any question and watch AI break it down step-by-step<br>
+                with intelligent tool selection and logical reasoning
             </p>
         </div>
 
-        <div class="chat-container">
+        <div class="chat-container" id="chatContainer">
             <div class="messages-container" id="messagesContainer"></div>
             
             <div class="input-wrapper">
                 <textarea 
                     class="chat-input" 
                     id="chatInput"
-                    placeholder="Ask me anything... e.g., 'Who is Amir Khan?' or 'What is 25 * 4 + 10?'"
-                    rows="3"
+                    placeholder="Ask me anything... e.g., 'What is 25 * 4 + 10?' or 'Solve for x: 2x + 5 = 15' or 'Explain quantum computing'"
+                    rows="1"
                 ></textarea>
             </div>
             
-            <button class="send-button" id="sendButton" onclick="sendMessage()">
-                Ask Question
-            </button>
+            <div class="input-controls">
+                <div class="show-steps-toggle">
+                    <span>Show thinking process</span>
+                    <div class="toggle-switch active" id="stepsToggle" onclick="toggleSteps()">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <span>Solve</span>
+                    <span>→</span>
+                </button>
+            </div>
         </div>
     </main>
 
     <script>
+        let showSteps = true;
         let isProcessing = false;
-        
-        // Auto-detect API URL
         const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:5000' 
             : '';
+
+        function toggleSteps() {
+            showSteps = !showSteps;
+            const toggle = document.getElementById('stepsToggle');
+            toggle.classList.toggle('active');
+        }
 
         function addUserMessage(content) {
             const messagesContainer = document.getElementById('messagesContainer');
@@ -279,6 +597,8 @@
             
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageDiv;
         }
 
         function addThinkingMessage() {
@@ -288,9 +608,11 @@
             messageDiv.className = 'message';
             messageDiv.innerHTML = `
                 <div class="message-ai">
-                    <div class="thinking">
-                        <div class="thinking-spinner"></div>
-                        <span>Thinking...</span>
+                    <div class="thinking-process">
+                        <div class="thinking-header">
+                            <div class="thinking-spinner"></div>
+                            <span>Analyzing and decomposing your question...</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -306,17 +628,62 @@
             
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
-            messageDiv.innerHTML = `
-                <div class="message-ai">${formatAnswer(data.final_answer)}</div>
+            
+            let html = '<div class="message-ai">';
+            
+            // Show decomposition and steps if enabled and available
+            if (showSteps && data.subproblems && data.subproblems.length > 0) {
+                html += `
+                    <div class="reasoning-header">
+                        <span class="brain-icon">🧠</span>
+                        <span>Reasoning Process</span>
+                    </div>
+                `;
+                
+                // Show decomposition steps
+                if (data.decomposition_steps && data.decomposition_steps.length > 0) {
+                    html += `
+                        <div class="decomposition-section">
+                            <div class="section-title">Problem Decomposition</div>
+                    `;
+                    
+                    data.decomposition_steps.forEach((step, index) => {
+                        html += `<div class="step"><strong>Step ${index + 1}:</strong> ${escapeHtml(step)}</div>`;
+                    });
+                    
+                    html += '</div>';
+                }
+                
+                // Show subproblem solutions
+                html += '<div class="section-title">Step-by-Step Solution</div>';
+                
+                data.subproblems.forEach((item, index) => {
+                    const toolName = formatToolName(item.tool);
+                    html += `
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-title">${escapeHtml(item.subproblem)}</div>
+                                <div class="tool-badge">${toolName}</div>
+                            </div>
+                            <div class="step-solution">${escapeHtml(item.solution)}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Final answer
+            html += `
+                <div class="final-answer">
+                    <div class="final-answer-label">✓ Final Answer</div>
+                    <div class="final-answer-text">${escapeHtml(data.final_answer)}</div>
+                </div>
             `;
             
+            html += '</div>';
+            
+            messageDiv.innerHTML = html;
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        function formatAnswer(text) {
-            // Convert line breaks to <br> and basic formatting
-            return escapeHtml(text).replace(/\n/g, '<br>');
         }
 
         function addErrorMessage(error) {
@@ -325,8 +692,10 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
             messageDiv.innerHTML = `
-                <div class="message-ai" style="color: #ff6b6b;">
-                    <strong>Error:</strong> ${escapeHtml(error)}
+                <div class="message-ai">
+                    <div class="error-message">
+                        <strong>Error:</strong> ${escapeHtml(error)}
+                    </div>
                 </div>
             `;
             
@@ -351,7 +720,9 @@
             isProcessing = true;
             const sendButton = document.getElementById('sendButton');
             sendButton.disabled = true;
-            sendButton.textContent = 'Thinking...';
+            
+            const mainContent = document.getElementById('mainContent');
+            mainContent.classList.add('chat-active');
 
             // Add user message
             addUserMessage(message);
@@ -375,7 +746,8 @@
                 removeMessage(thinkingMsg);
 
                 if (!response.ok) {
-                    throw new Error('Failed to get response from server');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to get response from server');
                 }
 
                 const data = await response.json();
@@ -385,20 +757,49 @@
 
             } catch (error) {
                 removeMessage(thinkingMsg);
-                addErrorMessage(error.message || 'Failed to connect to the server. Please try again later.');
+                addErrorMessage(error.message || 'Failed to connect to the server. Please make sure the backend is running.');
                 console.error('Error:', error);
             } finally {
                 isProcessing = false;
                 sendButton.disabled = false;
-                sendButton.textContent = 'Ask Question';
                 input.focus();
             }
+        }
+
+        function formatToolName(tool) {
+            const toolNames = {
+                'calculator': '🔢 Calculator',
+                'equation_solver': '📐 Equation Solver',
+                'pattern_recognizer': '🔍 Pattern Finder',
+                'logic_evaluator': '💡 Logic Engine',
+                'llm_reasoner': '🤖 AI Reasoner',
+                'text_analyzer': '📖 Text Analyzer',
+                'definition_provider': '📚 Definition Provider',
+                'comparison_engine': '⚖️ Comparison Engine',
+                'explanation_engine': '🔍 Explanation Engine',
+                'enhanced_reasoner': '🧠 Enhanced Reasoner'
+            };
+            return toolNames[tool] || tool;
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Auto-expand textarea
+        function autoExpand(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            
+            // Expand chat container when typing
+            const chatContainer = document.getElementById('chatContainer');
+            if (textarea.value.trim()) {
+                chatContainer.classList.add('expanded');
+            } else {
+                chatContainer.classList.remove('expanded');
+            }
         }
 
         // Enter to send (Shift+Enter for new line)
@@ -409,8 +810,30 @@
             }
         });
 
-        // Auto-focus on input
-        document.getElementById('chatInput').focus();
+        // Auto-expand on input
+        document.getElementById('chatInput').addEventListener('input', function() {
+            autoExpand(this);
+        });
+
+        // Initial auto-expand
+        document.addEventListener('DOMContentLoaded', function() {
+            autoExpand(document.getElementById('chatInput'));
+        });
+
+        // Check backend health on load
+        async function checkBackendHealth() {
+            try {
+                const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : '/api/health';
+                const response = await fetch(apiUrl);
+                if (response.ok) {
+                    console.log('✓ Backend is running');
+                }
+            } catch (error) {
+                console.warn('⚠ Backend not reachable. Make sure the server is running.');
+            }
+        }
+
+        checkBackendHealth();
     </script>
 </body>
 </html>

@@ -7,6 +7,8 @@ import json
 from typing import List, Dict, Any
 import requests
 import math
+import sympy as sp
+from sympy import symbols, solve, simplify
 
 # Load environment variables
 load_dotenv()
@@ -33,9 +35,9 @@ def serve_static(path):
     return send_from_directory('../frontend', path)
 
 # ============================================
-# SIMPLIFIED GROQ CLIENT
+# ENHANCED GROQ CLIENT
 # ============================================
-class SimpleGroqClient:
+class EnhancedGroqClient:
     def __init__(self):
         self.api_key = os.getenv('GROQ_API_KEY')
         if not self.api_key:
@@ -88,180 +90,380 @@ class SimpleGroqClient:
             return "I understand your question. With a proper GROQ_API_KEY environment variable set, I would provide a detailed AI-generated response to your query."
 
 # ============================================
-# SIMPLIFIED PROBLEM SOLVER
+# ENHANCED PROBLEM DECOMPOSER
 # ============================================
-class SimpleProblemSolver:
+class EnhancedProblemDecomposer:
     def __init__(self, llm_client):
         self.llm = llm_client
     
-    def needs_step_by_step(self, question: str) -> bool:
-        """Determine if the question needs step-by-step solution"""
+    def analyze_question_type(self, question: str) -> str:
+        """Analyze the question to determine its type"""
         question_lower = question.lower()
         
-        # Questions that typically need step-by-step
-        step_questions = [
-            'solve', 'calculate', 'compute', 'step by step', 'show steps',
-            'how to', 'process', 'method', 'equation', 'formula', 'math',
-            'proof', 'derivation'
-        ]
+        # Mathematical questions
+        math_keywords = ['calculate', 'compute', 'solve', 'equation', 'formula', 'math', 'number', 'digit']
+        if any(keyword in question_lower for keyword in math_keywords) or re.search(r'\d+[\+\-\*\/\^]', question):
+            return "mathematical"
         
-        # Questions that typically don't need step-by-step
-        simple_questions = [
-            'who is', 'what is', 'explain', 'describe', 'tell me about',
-            'define', 'meaning of', 'when did', 'where is'
-        ]
+        # Scientific questions
+        science_keywords = ['physics', 'chemistry', 'biology', 'scientific', 'experiment', 'theory']
+        if any(keyword in question_lower for keyword in science_keywords):
+            return "scientific"
         
-        if any(word in question_lower for word in step_questions):
-            return True
-        if any(word in question_lower for word in simple_questions):
-            return False
+        # Historical questions
+        history_keywords = ['history', 'historical', 'past', 'century', 'war', 'king', 'queen', 'ancient']
+        if any(keyword in question_lower for keyword in history_keywords):
+            return "historical"
         
-        # Default to simple answers
-        return False
+        # Geographical questions
+        geo_keywords = ['country', 'city', 'capital', 'river', 'mountain', 'continent', 'map', 'location']
+        if any(keyword in question_lower for keyword in geo_keywords):
+            return "geographical"
+        
+        # Logical reasoning
+        logic_keywords = ['logic', 'reasoning', 'if then', 'therefore', 'implies', 'deduce']
+        if any(keyword in question_lower for keyword in logic_keywords):
+            return "logical"
+        
+        # Text analysis
+        text_keywords = ['paragraph', 'sentence', 'word', 'meaning', 'define', 'explain', 'describe']
+        if any(keyword in question_lower for keyword in text_keywords):
+            return "textual"
+        
+        # Default to general reasoning
+        return "general"
     
-    def solve_problem(self, question: str) -> Dict[str, Any]:
+    def decompose(self, question: str) -> List[str]:
+        question_type = self.analyze_question_type(question)
+        
+        prompt = f"""Analyze this {question_type} question and break it down into 2-4 logical steps. Return ONLY a JSON array of strings.
+
+Question: "{question}"
+
+Examples:
+- Math: ["Identify the mathematical operations", "Apply order of operations", "Calculate the result"]
+- Explanation: ["Understand the key concepts", "Break down the components", "Provide comprehensive explanation"]
+- Logic: ["Analyze the premises", "Apply logical rules", "Derive conclusion"]
+
+JSON:"""
+        
+        messages = [{"role": "user", "content": prompt}]
+        
         try:
-            needs_steps = self.needs_step_by_step(question)
-            
-            if needs_steps:
-                return self._solve_with_steps(question)
-            else:
-                return self._solve_simple(question)
-                
+            response = self.llm.generate_response(messages, max_tokens=300)
+            json_match = re.search(r'\[.*\]', response, re.DOTALL)
+            if json_match:
+                subproblems = json.loads(json_match.group())
+                if isinstance(subproblems, list) and len(subproblems) >= 2:
+                    return subproblems
         except Exception as e:
-            return self._handle_error(question, str(e))
+            print(f"Decomposition error: {e}")
+        
+        # Fallback decomposition based on question type
+        return self._get_fallback_decomposition(question_type, question)
     
-    def _solve_simple(self, question: str) -> Dict[str, Any]:
-        """Provide direct, simple answers"""
-        prompt = f"""Please provide a clear, direct answer to the following question. 
-        Use simple language and be concise. If the answer has natural steps or categories, 
-        you can structure it with bullet points or short paragraphs, but don't show artificial steps like "Step 1: Analyze".
-
-        Question: {question}
-
-        Answer:"""
-        
-        messages = [{"role": "user", "content": prompt}]
-        answer = self.llm.generate_response(messages, max_tokens=500)
-        
-        return {
-            'final_answer': answer,
-            'subproblems': [],
-            'decomposition_steps': [],
-            'question_type': 'simple',
-            'needs_steps': False
+    def _get_fallback_decomposition(self, question_type: str, question: str) -> List[str]:
+        """Provide fallback decomposition steps based on question type"""
+        fallbacks = {
+            "mathematical": [
+                f"Analyze the mathematical expression: {question}",
+                "Identify the operations and their order",
+                "Perform the calculations step by step",
+                "Verify the final result"
+            ],
+            "scientific": [
+                f"Understand the scientific concept in: {question}",
+                "Break down the key principles involved",
+                "Apply relevant scientific laws/theories",
+                "Provide the explanation"
+            ],
+            "historical": [
+                f"Identify the historical context of: {question}",
+                "Recall relevant historical facts/events",
+                "Analyze causes and effects",
+                "Provide historical perspective"
+            ],
+            "textual": [
+                f"Analyze the text: {question}",
+                "Identify key themes and elements",
+                "Interpret meaning and context",
+                "Provide comprehensive analysis"
+            ],
+            "general": [
+                f"Understand the question: {question}",
+                "Break down into key components",
+                "Apply reasoning and knowledge",
+                "Formulate complete answer"
+            ]
         }
-    
-    def _solve_with_steps(self, question: str) -> Dict[str, Any]:
-        """Provide step-by-step solutions for complex problems"""
-        prompt = f"""Please solve this problem step by step. Show your reasoning process naturally.
-        Use clear steps with explanations, but don't use artificial language like "Step 1: Analyze".
-
-        Question: {question}
-
-        Provide a step-by-step solution:"""
         
-        messages = [{"role": "user", "content": prompt}]
-        answer = self.llm.generate_response(messages, max_tokens=600)
-        
-        # Extract steps from the answer
-        steps = self._extract_steps_from_answer(answer)
-        
-        return {
-            'final_answer': answer,
-            'subproblems': steps,
-            'decomposition_steps': [],
-            'question_type': 'complex',
-            'needs_steps': True
-        }
-    
-    def _extract_steps_from_answer(self, answer: str) -> List[Dict]:
-        """Extract natural steps from the answer text"""
-        steps = []
-        lines = answer.split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if line and (line.startswith('-') or line.startswith('•') or 
-                        line[0].isdigit and '. ' in line[:5] or
-                        'step' in line.lower()[:10]):
-                steps.append({
-                    'subproblem': line,
-                    'tool': 'reasoner',
-                    'solution': line
-                })
-        
-        return steps if steps else [{
-            'subproblem': 'Solution',
-            'tool': 'reasoner', 
-            'solution': answer
-        }]
-    
-    def _handle_error(self, question: str, error: str) -> Dict[str, Any]:
-        """Handle errors gracefully"""
-        return {
-            'final_answer': f"I encountered an error while processing your question: {error}. Please try again.",
-            'subproblems': [],
-            'decomposition_steps': [],
-            'question_type': 'error',
-            'needs_steps': False
-        }
+        return fallbacks.get(question_type, [
+            f"Step 1: Analyze {question}",
+            "Step 2: Apply reasoning",
+            "Step 3: Provide answer"
+        ])
 
 # ============================================
-# SIMPLIFIED EXECUTORS FOR MATH
+# ENHANCED TOOL SELECTOR
 # ============================================
-class SimpleCalculator:
+class EnhancedToolSelector:
+    def select_tool(self, subproblem: str, question_type: str) -> str:
+        text = subproblem.lower()
+        
+        # Mathematical tools
+        if re.search(r'calculate|compute|math|\d+[\+\-\*\/]|result|answer', text):
+            return 'calculator'
+        elif re.search(r'equation|solve for| x |variable', text):
+            return 'equation_solver'
+        elif re.search(r'pattern|sequence|next|series', text):
+            return 'pattern_recognizer'
+        
+        # Text analysis tools
+        elif re.search(r'analyze text|interpret|meaning|theme', text):
+            return 'text_analyzer'
+        elif re.search(r'define|definition|what is', text):
+            return 'definition_provider'
+        elif re.search(r'compare|difference|similar', text):
+            return 'comparison_engine'
+        
+        # Logic and reasoning
+        elif re.search(r'logic|reasoning|if then|therefore', text):
+            return 'logic_evaluator'
+        elif re.search(r'explain|describe|how does|why', text):
+            return 'explanation_engine'
+        
+        # Default to enhanced reasoner
+        else:
+            return 'enhanced_reasoner'
+
+# ============================================
+# ENHANCED EXECUTORS
+# ============================================
+class EnhancedCalculator:
     def solve(self, text: str) -> str:
         try:
-            # Extract mathematical expressions
+            # Extract mathematical expressions more robustly
             expressions = re.findall(r'[\d+\-*/().^]+', text)
             for expr in expressions:
                 try:
+                    # Replace ^ with ** for exponentiation
                     clean_expr = expr.replace('^', '**')
+                    # Safe evaluation
                     result = eval(clean_expr, {"__builtins__": None}, {
                         "sin": math.sin, "cos": math.cos, "tan": math.tan,
                         "sqrt": math.sqrt, "log": math.log, "exp": math.exp,
                         "pi": math.pi, "e": math.e
                     })
-                    return f"{expr} = {result}"
+                    return f"The expression {expr} equals {result}"
                 except:
                     continue
-            return "I can help with calculations. Please provide a clear math expression."
+            
+            # Try to extract numbers and operations from text
+            numbers = re.findall(r'\d+\.?\d*', text)
+            if len(numbers) >= 2:
+                if 'add' in text or 'plus' in text or '+' in text:
+                    result = sum(float(n) for n in numbers)
+                    return f"Sum: {result}"
+                elif 'multiply' in text or 'times' in text or 'product' in text or '*' in text:
+                    result = 1
+                    for n in numbers:
+                        result *= float(n)
+                    return f"Product: {result}"
+                elif 'subtract' in text or 'minus' in text or '-' in text:
+                    if len(numbers) == 2:
+                        result = float(numbers[0]) - float(numbers[1])
+                        return f"Difference: {result}"
+                elif 'divide' in text or 'over' in text or '/' in text:
+                    if len(numbers) == 2 and float(numbers[1]) != 0:
+                        result = float(numbers[0]) / float(numbers[1])
+                        return f"Quotient: {result}"
+            
+            return "Please provide a clearer mathematical expression to calculate."
         except Exception as e:
             return f"Calculation error: {str(e)}"
 
-class SimpleExecutor:
+class EquationSolver:
+    def solve(self, text: str) -> str:
+        try:
+            if not SYMPY_AVAILABLE:
+                return "Equation solving requires sympy package. Please install it or use basic calculations."
+                
+            # Extract equation (look for = sign)
+            if '=' in text:
+                equation_part = text.split('=')[0] + '=' + text.split('=')[1]
+                # Define common variables
+                x, y = symbols('x y')
+                
+                try:
+                    # Try to solve using sympy
+                    solutions = solve(equation_part, x)
+                    if solutions:
+                        if len(solutions) == 1:
+                            return f"The solution is x = {solutions[0]}"
+                        else:
+                            return f"Solutions: {', '.join(str(s) for s in solutions)}"
+                    else:
+                        return "No solution found or the equation is too complex."
+                except:
+                    return "I can solve linear equations. Please provide an equation like '2x + 5 = 15'."
+            else:
+                return "Please provide an equation with an '=' sign."
+        except Exception as e:
+            return f"Equation solving error: {str(e)}"
+
+class TextAnalyzer:
     def __init__(self, llm_client):
         self.llm = llm_client
-        self.calculator = SimpleCalculator()
     
-    def execute(self, problem: str) -> str:
-        # For now, use LLM for most problems, calculator for pure math
-        if re.search(r'[\d+\-*/().^=]', problem) and not re.search(r'[a-zA-Z]', problem.replace(' ', '')):
-            return self.calculator.solve(problem)
-        else:
-            messages = [{"role": "user", "content": f"Solve: {problem}"}]
-            return self.llm.generate_response(messages, max_tokens=300)
+    def analyze(self, text: str) -> str:
+        prompt = f"""Analyze this text and provide key insights:
+
+Text: "{text}"
+
+Focus on:
+- Main themes and topics
+- Key points or arguments
+- Overall meaning or purpose
+- Any notable patterns or structures
+
+Provide a concise analysis:"""
+        
+        messages = [{"role": "user", "content": prompt}]
+        return self.llm.generate_response(messages, max_tokens=300)
+
+class EnhancedExecutor:
+    def __init__(self, llm_client):
+        self.llm = llm_client
+        self.calculator = EnhancedCalculator()
+        self.equation_solver = EquationSolver()
+        self.text_analyzer = TextAnalyzer(llm_client)
+    
+    def execute(self, subproblem: str, tool: str, question_type: str) -> str:
+        try:
+            if tool == 'calculator':
+                return self.calculator.solve(subproblem)
+            elif tool == 'equation_solver':
+                return self.equation_solver.solve(subproblem)
+            elif tool == 'text_analyzer':
+                return self.text_analyzer.analyze(subproblem)
+            elif tool in ['definition_provider', 'comparison_engine', 'explanation_engine']:
+                return self._handle_specialized_tools(subproblem, tool, question_type)
+            else:  # enhanced_reasoner and fallback
+                return self._handle_general_reasoning(subproblem, question_type)
+        except Exception as e:
+            return f"Error in execution: {str(e)}"
+    
+    def _handle_specialized_tools(self, subproblem: str, tool: str, question_type: str) -> str:
+        """Handle specialized text analysis tools"""
+        prompts = {
+            'definition_provider': f"Provide a clear, concise definition for: '{subproblem}'",
+            'comparison_engine': f"Compare and contrast the elements in: '{subproblem}'",
+            'explanation_engine': f"Explain in detail: '{subproblem}'"
+        }
+        
+        prompt = prompts.get(tool, f"Provide a comprehensive answer to: '{subproblem}'")
+        messages = [{"role": "user", "content": prompt}]
+        return self.llm.generate_response(messages, max_tokens=350)
+    
+    def _handle_general_reasoning(self, subproblem: str, question_type: str) -> str:
+        """Handle general reasoning with context awareness"""
+        context_prompts = {
+            "historical": f"Provide historical context and facts for: '{subproblem}'",
+            "scientific": f"Provide scientific explanation for: '{subproblem}'",
+            "geographical": f"Provide geographical information for: '{subproblem}'",
+            "textual": f"Analyze and interpret: '{subproblem}'"
+        }
+        
+        prompt = context_prompts.get(question_type, f"Solve this step: '{subproblem}'")
+        messages = [{"role": "user", "content": prompt}]
+        return self.llm.generate_response(messages, max_tokens=300)
 
 # ============================================
-# SIMPLIFIED AGENTIC SYSTEM
+# ENHANCED AGENTIC SYSTEM
 # ============================================
-class SimpleAgenticSystem:
+class EnhancedAgenticSystem:
     def __init__(self):
-        self.llm = SimpleGroqClient()
-        self.solver = SimpleProblemSolver(self.llm)
-        self.executor = SimpleExecutor(self.llm)
+        self.llm = EnhancedGroqClient()
+        self.decomposer = EnhancedProblemDecomposer(self.llm)
+        self.tool_selector = EnhancedToolSelector()
+        self.executor = EnhancedExecutor(self.llm)
     
     def solve_problem(self, question: str) -> Dict[str, Any]:
-        return self.solver.solve_problem(question)
+        try:
+            # First, analyze the question type
+            question_type = self.decomposer.analyze_question_type(question)
+            
+            # Decompose based on question type
+            subproblems = self.decomposer.decompose(question)
+            
+            solutions = []
+            for subproblem in subproblems:
+                tool = self.tool_selector.select_tool(subproblem, question_type)
+                solution = self.executor.execute(subproblem, tool, question_type)
+                
+                solutions.append({
+                    'subproblem': subproblem,
+                    'tool': tool,
+                    'solution': solution
+                })
+            
+            # Generate final answer with context awareness
+            final_answer = self._synthesize_answer(solutions, question, question_type)
+            
+            return {
+                'final_answer': final_answer,
+                'subproblems': solutions,
+                'decomposition_steps': subproblems,
+                'question_type': question_type
+            }
+            
+        except Exception as e:
+            return self._handle_error(question, str(e))
+    
+    def _synthesize_answer(self, solutions: List[Dict], question: str, question_type: str) -> str:
+        """Synthesize final answer with question type context"""
+        if not solutions:
+            return "I couldn't generate a solution for this question."
+        
+        # For single-step solutions, just return the solution
+        if len(solutions) == 1:
+            return solutions[0]['solution']
+        
+        # Use LLM to synthesize multi-step answers
+        synthesis_prompt = f"""Based on the following step-by-step analysis, provide a comprehensive final answer to the question: "{question}"
+
+Question Type: {question_type}
+Steps:
+{json.dumps([f"{i+1}. {s['subproblem']} -> {s['solution']}" for i, s in enumerate(solutions)], indent=2)}
+
+Provide a well-structured, comprehensive final answer that directly addresses the original question:"""
+        
+        messages = [
+            {"role": "user", "content": synthesis_prompt}
+        ]
+        
+        return self.llm.generate_response(messages, max_tokens=400)
+    
+    def _handle_error(self, question: str, error: str) -> Dict[str, Any]:
+        """Handle errors gracefully"""
+        error_response = {
+            'final_answer': f"I encountered an error while processing your question. Please try rephrasing it or ask something else. Error: {error}",
+            'subproblems': [{
+                'subproblem': 'Error handling',
+                'tool': 'error_handler',
+                'solution': f'System error: {error}'
+            }],
+            'decomposition_steps': ['Error occurred during processing'],
+            'question_type': 'error'
+        }
+        return error_response
 
 # ============================================
 # API ENDPOINTS
 # ============================================
 try:
-    agent = SimpleAgenticSystem()
-    print("✓ Simple Agentic System initialized successfully")
-    print(f"✓ Sympy available: {SYMPY_AVAILABLE}")
+    agent = EnhancedAgenticSystem()
+    print("✓ Enhanced Agentic System initialized successfully")
 except Exception as e:
     print(f"✗ Failed to initialize Agentic System: {e}")
     agent = None
@@ -271,7 +473,7 @@ def solve():
     try:
         if agent is None:
             return jsonify({
-                'error': 'System not properly initialized.'
+                'error': 'System not properly initialized. Check GROQ_API_KEY.'
             }), 500
         
         data = request.json
@@ -287,22 +489,20 @@ def solve():
         # Handle very short questions and greetings
         if len(question) < 3:
             return jsonify({
-                'final_answer': "I'd be happy to help! Please ask me a specific question.",
+                'final_answer': "I'd be happy to help! Please ask me a specific question or problem you'd like me to solve.",
                 'subproblems': [],
                 'decomposition_steps': [],
-                'question_type': 'general',
-                'needs_steps': False
+                'question_type': 'general'
             })
         
         # Handle common greetings
         greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening']
         if question.lower().strip('.!?') in greetings:
             return jsonify({
-                'final_answer': "Hello! I'm an AI Reasoning Engine. I can help you with questions, explanations, calculations, and problem solving. What would you like to know?",
+                'final_answer': "Hello! I'm an Enhanced AI Reasoning Engine. I can help you with mathematical problems, text analysis, explanations, definitions, and much more. What would you like me to help you with?",
                 'subproblems': [],
                 'decomposition_steps': [],
-                'question_type': 'greeting',
-                'needs_steps': False
+                'question_type': 'greeting'
             })
         
         # Process the question
@@ -321,8 +521,7 @@ def health():
     return jsonify({
         'status': status,
         'model': 'groq-llama-3.1',
-        'system': 'simple-reasoning-engine',
-        'sympy_available': SYMPY_AVAILABLE
+        'system': 'enhanced-reasoning-engine'
     })
 
 @app.route('/api/test-key', methods=['GET'])
@@ -336,17 +535,24 @@ def test_key():
         'status': 'API key loaded',
         'key_preview': masked_key,
         'key_length': len(api_key),
-        'system': 'Simple Reasoning Engine'
+        'system': 'Enhanced Reasoning Engine'
     })
 
 @app.route('/api/capabilities', methods=['GET'])
 def capabilities():
     return jsonify({
         'capabilities': [
-            'Simple Q&A and explanations',
-            'Mathematical calculations',
-            'Step-by-step problem solving when needed',
-            'Clear, direct answers'
+            'Mathematical calculations and equation solving',
+            'Text analysis and interpretation',
+            'Historical and geographical questions',
+            'Scientific explanations',
+            'Logical reasoning',
+            'Definition and comparison tasks',
+            'Step-by-step problem decomposition'
+        ],
+        'question_types_handled': [
+            'mathematical', 'scientific', 'historical', 'geographical',
+            'textual', 'logical', 'general'
         ]
     })
 
@@ -354,8 +560,9 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     debug_mode = os.getenv('DEBUG', 'false').lower() == 'true'
     
-    print("🚀 Simple AI Reasoning Engine Starting...")
-    print(f"🌐 Server will run on port: {port}")
-    print("✅ System ready to answer questions clearly and simply!")
+    print("🚀 Enhanced AI Reasoning Engine Starting...")
+    print(f"📊 Available question types: mathematical, scientific, historical, geographical, textual, logical")
+    print(f"🌐 Server will run on: http://localhost:{port}")
+    print("✅ System ready to handle complex questions and paragraphs!")
     
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
