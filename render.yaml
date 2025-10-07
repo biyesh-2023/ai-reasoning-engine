@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-reasoning-engine
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r backend/requirements.txt
+    startCommand: |
+      cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: GROQ_API_KEY
+        description: "Groq API key for AI capabilities"
+        generateValue: true
